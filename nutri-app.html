@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriSnap — Futuristic Nutrition Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --surface: #0c1120;
+    --surface2: #111827;
+    --border: rgba(99,210,255,0.12);
+    --border-bright: rgba(99,210,255,0.35);
+    --accent: #63d2ff;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --green: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --glow-blue: 0 0 20px rgba(99,210,255,0.2);
+    --glow-green: 0 0 20px rgba(52,211,153,0.2);
+    --glow-purple: 0 0 20px rgba(167,139,250,0.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,210,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(167,139,250,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Grid lines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,210,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,210,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(99,210,255,0.5);
+  }
+  .logo span { color: var(--accent2); }
+  .user-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 8px 16px 8px 8px;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bg);
+  }
+  .user-info { line-height: 1.2; }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-rank { font-size: 11px; color: var(--accent); font-family: 'Orbitron', sans-serif; }
+
+  /* Nav tabs */
+  .nav {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 5px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .nav-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+    box-shadow: 0 0 20px rgba(99,210,255,0.3);
+  }
+  .nav-btn:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.04); }
+
+  /* Sections */
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Stat cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border-bright); box-shadow: var(--glow-blue); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 14px 14px 0 0;
+  }
+  .stat-card.blue::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .stat-card.purple::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .stat-card.green::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+  .stat-card.amber::before { background: linear-gradient(90deg, var(--accent4), transparent); }
+  .stat-card.pink::before { background: linear-gradient(90deg, var(--accent5), transparent); }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-value.blue { color: var(--accent); }
+  .stat-value.purple { color: var(--accent2); }
+  .stat-value.green { color: var(--accent3); }
+  .stat-value.amber { color: var(--accent4); }
+  .stat-value.pink { color: var(--accent5); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* Progress ring */
+  .ring-container { display: flex; align-items: center; gap: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 28px; }
+  .ring-wrap { position: relative; flex-shrink: 0; }
+  .ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-pct { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent); }
+  .ring-sub { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .ring-info h3 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .ring-info p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* Macro bars */
+  .macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 28px; }
+  .macro-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .macro-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .macro-name { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .macro-val { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 600; }
+  .progress-track { height: 5px; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 10px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+
+  /* Photo upload */
+  .upload-zone {
+    border: 2px dashed var(--border-bright);
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: rgba(99,210,255,0.02);
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(99,210,255,0.05); box-shadow: var(--glow-blue); }
+  .upload-icon { font-size: 48px; margin-bottom: 12px; }
+  .upload-title { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+  .upload-sub { font-size: 13px; color: var(--text-muted); }
+  #fileInput { display: none; }
+
+  /* AI analysis result */
+  .analysis-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .analysis-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .analysis-title { font-family: 'Orbitron', sans-serif; font-size: 13px; color: var(--accent); letter-spacing: 1px; }
+  .scanning-badge {
+    background: rgba(99,210,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+  }
+  .scanning-badge.done { background: rgba(52,211,153,0.1); border-color: var(--accent3); color: var(--accent3); }
+  .analysis-body { padding: 20px; }
+
+  /* Skeleton loader */
+  .skeleton { background: linear-gradient(90deg, var(--surface2) 25%, rgba(255,255,255,0.04) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+  /* Food result */
+  .food-result { display: none; }
+  .food-result.visible { display: block; animation: fadeIn 0.4s ease; }
+  .food-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .food-emoji { width: 60px; height: 60px; background: var(--surface2); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px; border: 1px solid var(--border); }
+  .food-name { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .food-meta { font-size: 13px; color: var(--text-muted); }
+  .food-score { margin-left: auto; text-align: center; }
+  .score-val { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 700; }
+  .score-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .nutrient-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .nutrient-item { background: var(--surface2); border-radius: 10px; padding: 12px; text-align: center; }
+  .nutrient-val { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .nutrient-name { font-size: 11px; color: var(--text-muted); }
+  .health-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+  .tag.good { background: rgba(52,211,153,0.1); color: var(--accent3); border: 1px solid rgba(52,211,153,0.2); }
+  .tag.warn { background: rgba(251,191,36,0.1); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+  .tag.bad { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+  .log-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: var(--bg);
+    border: none;
+    border-radius: 12px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 30px rgba(99,210,255,0.2);
+  }
+  .log-btn:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(99,210,255,0.35); }
+  .log-btn:active { transform: translateY(0); }
+
+  /* Logged meals */
+  .meals-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .meal-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s;
+  }
+  .meal-item:hover { border-color: var(--border-bright); }
+  .meal-emoji2 { font-size: 24px; }
+  .meal-info { flex: 1; }
+  .meal-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+  .meal-time { font-size: 12px; color: var(--text-muted); }
+  .meal-cals { font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 600; color: var(--accent); }
+  .meal-pts { font-size: 12px; color: var(--accent3); text-align: right; }
+
+  /* Leaderboard */
+  .leaderboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .lb-title { font-family: 'Orbitron', sans-serif; font-size: 16px; color: var(--accent2); }
+  .period-select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .lb-list { display: flex; flex-direction: column; gap: 8px; }
+  .lb-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .lb-item:hover { border-color: var(--border-bright); transform: translateX(4px); }
+  .lb-item.rank-1 { border-color: rgba(251,191,36,0.4); }
+  .lb-item.rank-1::before { content: ''; position: absolute; inset: 0; background: rgba(251,191,36,0.04); }
+  .lb-item.rank-2 { border-color: rgba(148,163,184,0.4); }
+  .lb-item.rank-3 { border-color: rgba(251,146,60,0.4); }
+  .lb-item.me { border-color: rgba(99,210,255,0.4); }
+  .lb-item.me::before { content: ''; position: absolute; inset: 0; background: rgba(99,210,255,0.04); }
+  .rank-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 32px;
+    text-align: center;
+  }
+  .rank-1 .rank-num { color: var(--amber); }
+  .rank-2 .rank-num { color: #94a3b8; }
+  .rank-3 .rank-num { color: var(--accent4); }
+  .lb-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bg);
+    flex-shrink: 0;
+  }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+  .lb-streak { font-size: 12px; color: var(--text-muted); }
+  .lb-pts {
+    text-align: right;
+  }
+  .lb-pts-val { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: var(--accent2); }
+  .lb-pts-label { font-size: 11px; color: var(--text-muted); }
+  .lb-bar { height: 3px; background: rgba(255,255,255,0.04); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+  .lb-bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+
+  /* Diet suggestions */
+  .diet-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .diet-title { font-family: 'Orbitron', sans-serif; font-size: 16px; color: var(--accent3); }
+  .diet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .diet-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .diet-card:hover { border-color: var(--border-bright); box-shadow: var(--glow-green); transform: translateY(-3px); }
+  .diet-card.selected { border-color: var(--accent3); box-shadow: 0 0 25px rgba(52,211,153,0.2); }
+  .diet-icon { font-size: 36px; margin-bottom: 12px; }
+  .diet-name { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .diet-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
+  .diet-macros { display: flex; gap: 8px; flex-wrap: wrap; }
+  .diet-macro { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); color: var(--text-dim); }
+
+  /* Meal plan */
+  .meal-plan-title { font-size: 15px; font-weight: 500; margin-bottom: 16px; color: var(--text-dim); }
+  .day-plan { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .day-meal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+  .meal-type { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; min-width: 80px; }
+  .meal-suggestion { font-size: 14px; font-weight: 500; flex: 1; }
+  .meal-cals2 { font-family: 'Orbitron', sans-serif; font-size: 13px; color: var(--accent4); }
+
+  /* Points / achievements */
+  .points-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .points-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 60%);
+    animation: pulse 4s ease infinite;
+  }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
+  .points-big { font-family: 'Orbitron', sans-serif; font-size: 56px; font-weight: 900; color: var(--accent2); line-height: 1; position: relative; text-shadow: 0 0 40px rgba(167,139,250,0.4); }
+  .points-label { font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; margin-top: 8px; position: relative; }
+  .level-badge { display: inline-block; margin-top: 16px; background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.3); color: var(--accent2); font-family: 'Orbitron', sans-serif; font-size: 12px; padding: 6px 20px; border-radius: 20px; letter-spacing: 2px; position: relative; }
+  .achievements-title { font-family: 'Orbitron', sans-serif; font-size: 13px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 14px; text-transform: uppercase; }
+  .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 24px; }
+  .ach-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 12px; text-align: center; transition: all 0.2s; }
+  .ach-card:hover { border-color: var(--border-bright); }
+  .ach-card.locked { opacity: 0.4; }
+  .ach-icon { font-size: 28px; margin-bottom: 8px; }
+  .ach-name { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+  .ach-pts { font-size: 11px; color: var(--accent2); font-family: 'Orbitron', sans-serif; }
+
+  /* Chart section */
+  .chart-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+  .chart-title { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  .mini-chart { height: 80px; display: flex; align-items: flex-end; gap: 6px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); min-height: 4px; }
+  .bar-day { font-size: 10px; color: var(--text-muted); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--surface2);
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 30px rgba(52,211,153,0.2);
+    max-width: 300px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* SVG ring */
+  .calorie-ring { transform: rotate(-90deg); }
+
+  /* Loading animation */
+  .loader { display: none; }
+  .loader.active { display: block; }
+  .loader-bar { height: 3px; background: rgba(255,255,255,0.04); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .loader-fill { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent3)); animation: loadScan 2s ease forwards; }
+  @keyframes loadScan { 0% { width: 0%; } 30% { width: 40%; } 70% { width: 75%; } 95% { width: 92%; } 100% { width: 100%; } }
+  .scan-line { height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: scan 0.8s ease infinite; }
+  @keyframes scan { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(80px); opacity: 0; } }
+  .loader-text { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--accent); letter-spacing: 3px; text-align: center; animation: blink 1s ease infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  @media (max-width: 600px) {
+    .nutrient-grid { grid-template-columns: repeat(2, 1fr); }
+    .macro-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .ring-container { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">NutriSnap — Futuristic nutrition tracking app with AI food scanning, leaderboard, and diet suggestions</h2>
+
+  <header>
+    <div class="logo">NUTRI<span>SNAP</span></div>
+    <div class="user-badge">
+      <div class="avatar">AX</div>
+      <div class="user-info">
+        <div class="user-name">Alex Chen</div>
+        <div class="user-rank">RANK #4 · LVL 12</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showSection('scan')">Scan Food</button>
+    <button class="nav-btn" onclick="showSection('leaderboard')">Leaderboard</button>
+    <button class="nav-btn" onclick="showSection('diet')">Diet Plan</button>
+    <button class="nav-btn" onclick="showSection('points')">Points</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="section-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-label">Calories Today</div>
+        <div class="stat-value blue" id="cal-today">1,340</div>
+        <div class="stat-sub">Goal: 2,100 kcal</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">NutriPoints</div>
+        <div class="stat-value purple">4,820</div>
+        <div class="stat-sub">+240 today</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Streak</div>
+        <div class="stat-value green">14 🔥</div>
+        <div class="stat-sub">Days logged</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Protein</div>
+        <div class="stat-value amber">82g</div>
+        <div class="stat-sub">Goal: 150g</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-label">Water</div>
+        <div class="stat-value pink">1.8L</div>
+        <div class="stat-sub">Goal: 2.5L</div>
+      </div>
+    </div>
+
+    <div class="ring-container">
+      <div class="ring-wrap">
+        <svg width="130" height="130">
+          <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"/>
+          <circle id="calRing" cx="65" cy="65" r="52" fill="none" stroke="url(#ringGrad)" stroke-width="10" stroke-linecap="round" class="calorie-ring" stroke-dasharray="327" stroke-dashoffset="327"/>
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#63d2ff"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="ring-label">
+          <div class="ring-pct" id="ringPct">64%</div>
+          <div class="ring-sub">of goal</div>
+        </div>
+      </div>
+      <div class="ring-info">
+        <h3>Daily Calorie Progress</h3>
+        <p>You've consumed <strong style="color:var(--accent)">1,340 kcal</strong> of your 2,100 kcal goal. You have <strong style="color:var(--accent3)">760 kcal</strong> remaining. Keep it up — you're on track for a great day!</p>
+      </div>
+    </div>
+
+    <div class="macro-grid">
+      <div class="macro-bar">
+        <div class="macro-top">
+          <span class="macro-name">Protein</span>
+          <span class="macro-val" style="color:var(--accent)">82 / 150g</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:55%; background:var(--accent);"></div>
+        </div>
+      </div>
+      <div class="macro-bar">
+        <div class="macro-top">
+          <span class="macro-name">Carbs</span>
+          <span class="macro-val" style="color:var(--accent2)">145 / 200g</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:72%; background:var(--accent2);"></div>
+        </div>
+      </div>
+      <div class="macro-bar">
+        <div class="macro-top">
+          <span class="macro-name">Fat</span>
+          <span class="macro-val" style="color:var(--accent4)">38 / 65g</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:58%; background:var(--accent4);"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Weekly Calories</div>
+      <div class="mini-chart" id="weekChart"></div>
+    </div>
+
+    <div class="meals-list" id="loggedMeals">
+      <div style="font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Today's Log</div>
+    </div>
+  </div>
+
+  <!-- SCAN FOOD -->
+  <div class="section" id="section-scan">
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="handleDrag(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('drag')">
+      <div class="upload-icon">📷</div>
+      <div class="upload-title">Scan Your Food</div>
+      <div class="upload-sub">Drop an image, click to browse, or use your camera</div>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleFile(this)">
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <button onclick="analyzeDemo('salad')" style="flex:1;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:DM Sans,sans-serif;cursor:pointer;font-size:13px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--border-bright)'" onmouseout="this.style.borderColor='var(--border)'">🥗 Try: Caesar Salad</button>
+      <button onclick="analyzeDemo('burger')" style="flex:1;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:DM Sans,sans-serif;cursor:pointer;font-size:13px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--border-bright)'" onmouseout="this.style.borderColor='var(--border)'">🍔 Try: Cheeseburger</button>
+      <button onclick="analyzeDemo('bowl')" style="flex:1;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:DM Sans,sans-serif;cursor:pointer;font-size:13px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--border-bright)'" onmouseout="this.style.borderColor='var(--border)'">🍚 Try: Poke Bowl</button>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-header">
+        <div class="analysis-title">AI NUTRITION ANALYSIS</div>
+        <div class="scanning-badge" id="scanBadge">READY</div>
+      </div>
+      <div class="analysis-body">
+        <div class="loader" id="loader">
+          <div class="loader-bar"><div class="loader-fill"></div></div>
+          <div class="loader-text" id="loaderText">INITIALIZING SCAN</div>
+        </div>
+        <div class="food-result" id="foodResult">
+          <div class="food-header">
+            <div class="food-emoji" id="foodEmoji">🥗</div>
+            <div>
+              <div class="food-name" id="foodName">Caesar Salad</div>
+              <div class="food-meta" id="foodMeta">~350g serving · Mediterranean</div>
+            </div>
+            <div class="food-score">
+              <div class="score-val" id="scoreVal" style="color:var(--accent3)">87</div>
+              <div class="score-label">Health Score</div>
+            </div>
+          </div>
+          <div class="nutrient-grid">
+            <div class="nutrient-item">
+              <div class="nutrient-val" style="color:var(--accent)" id="nCal">320</div>
+              <div class="nutrient-name">Calories</div>
+            </div>
+            <div class="nutrient-item">
+              <div class="nutrient-val" style="color:var(--accent2)" id="nProt">18g</div>
+              <div class="nutrient-name">Protein</div>
+            </div>
+            <div class="nutrient-item">
+              <div class="nutrient-val" style="color:var(--amber)" id="nCarb">24g</div>
+              <div class="nutrient-name">Carbs</div>
+            </div>
+            <div class="nutrient-item">
+              <div class="nutrient-val" style="color:var(--accent4)" id="nFat">12g</div>
+              <div class="nutrient-name">Fat</div>
+            </div>
+          </div>
+          <div class="health-tags" id="healthTags"></div>
+          <button class="log-btn" onclick="logMeal()">+ LOG THIS MEAL &amp; EARN POINTS</button>
+        </div>
+        <div id="scanPlaceholder" style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">
+          Upload a photo or select a demo food above to analyze
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="section" id="section-leaderboard">
+    <div class="leaderboard-header">
+      <div class="lb-title">GLOBAL RANKINGS</div>
+      <select class="period-select" onchange="updateLeaderboard(this.value)">
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+        <option value="all">All Time</option>
+      </select>
+    </div>
+    <div class="lb-list" id="lbList"></div>
+  </div>
+
+  <!-- DIET PLAN -->
+  <div class="section" id="section-diet">
+    <div class="diet-header">
+      <div class="diet-title">PERSONALISED DIET PLANS</div>
+    </div>
+    <div class="diet-grid" id="dietGrid"></div>
+    <div id="mealPlanSection" style="display:none;">
+      <div class="meal-plan-title" id="mealPlanTitle">7-Day Meal Plan</div>
+      <div class="day-plan" id="dayPlan"></div>
+    </div>
+  </div>
+
+  <!-- POINTS & ACHIEVEMENTS -->
+  <div class="section" id="section-points">
+    <div class="points-hero">
+      <div class="points-big">4,820</div>
+      <div class="points-label">NutriPoints</div>
+      <div class="level-badge">LEVEL 12 — HEALTH ARCHITECT</div>
+    </div>
+    <div class="achievements-title">Achievements</div>
+    <div class="achievements-grid" id="achieveGrid"></div>
+    <div class="chart-section">
+      <div class="chart-title">Points earned this week</div>
+      <div class="mini-chart" id="ptsChart"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const foods = {
+  salad: {
+    emoji:'🥗', name:'Caesar Salad', meta:'~350g serving · Mediterranean',
+    cal:320, prot:'18g', carb:'24g', fat:'12g', score:87,
+    tags:[{t:'High Fiber',c:'good'},{t:'Low Calorie',c:'good'},{t:'Vitamin K',c:'good'},{t:'Sodium: Moderate',c:'warn'}],
+    pts: 120
+  },
+  burger: {
+    emoji:'🍔', name:'Cheeseburger', meta:'~250g serving · Fast Food',
+    cal:620, prot:'28g', carb:'46g', fat:'34g', score:42,
+    tags:[{t:'High Protein',c:'good'},{t:'High Saturated Fat',c:'bad'},{t:'High Sodium',c:'bad'},{t:'Refined Carbs',c:'warn'}],
+    pts: 30
+  },
+  bowl: {
+    emoji:'🍚', name:'Poke Bowl', meta:'~400g serving · Hawaiian Fusion',
+    cal:480, prot:'32g', carb:'58g', fat:'14g', score:91,
+    tags:[{t:'Omega-3 Rich',c:'good'},{t:'Complete Protein',c:'good'},{t:'Whole Grains',c:'good'},{t:'Low Sugar',c:'good'}],
+    pts: 150
+  }
+};
+
+let currentFood = null;
+let loggedMeals = [
+  {emoji:'🥣', name:'Overnight Oats', time:'8:30 AM', cals:340, pts:90},
+  {emoji:'🍌', name:'Banana + Almonds', time:'10:45 AM', cals:210, pts:70},
+  {emoji:'🍗', name:'Grilled Chicken Wrap', time:'1:15 PM', cals:480, pts:110},
+];
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function handleDrag(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) analyzeDemo('salad');
+}
+function handleFile(input) { if (input.files[0]) analyzeDemo('bowl'); }
+
+function analyzeDemo(type) {
+  currentFood = foods[type];
+  const badge = document.getElementById('scanBadge');
+  const loader = document.getElementById('loader');
+  const result = document.getElementById('foodResult');
+  const placeholder = document.getElementById('scanPlaceholder');
+
+  badge.className = 'scanning-badge'; badge.textContent = 'SCANNING';
+  loader.classList.add('active');
+  result.classList.remove('visible');
+  placeholder.style.display = 'none';
+  loader.innerHTML = '<div class="loader-bar"><div class="loader-fill"></div></div><div class="loader-text" id="loaderText">ANALYZING FOOD COMPOSITION</div>';
+
+  const steps = ['ANALYZING FOOD COMPOSITION','CALCULATING MACROS','CHECKING MICRONUTRIENTS','GENERATING HEALTH SCORE'];
+  let s = 0;
+  const interval = setInterval(() => {
+    s++;
+    if (s < steps.length) { document.getElementById('loaderText').textContent = steps[s]; }
+  }, 500);
+
+  setTimeout(() => {
+    clearInterval(interval);
+    loader.classList.remove('active');
+    badge.className = 'scanning-badge done'; badge.textContent = 'COMPLETE';
+    const f = currentFood;
+    document.getElementById('foodEmoji').textContent = f.emoji;
+    document.getElementById('foodName').textContent = f.name;
+    document.getElementById('foodMeta').textContent = f.meta;
+    document.getElementById('nCal').textContent = f.cal;
+    document.getElementById('nProt').textContent = f.prot;
+    document.getElementById('nCarb').textContent = f.carb;
+    document.getElementById('nFat').textContent = f.fat;
+    const sv = document.getElementById('scoreVal');
+    sv.textContent = f.score;
+    sv.style.color = f.score >= 75 ? 'var(--accent3)' : f.score >= 50 ? 'var(--amber)' : 'var(--red)';
+    const tagsEl = document.getElementById('healthTags');
+    tagsEl.innerHTML = f.tags.map(t => `<span class="tag ${t.c}">${t.t}</span>`).join('');
+    result.classList.add('visible');
+  }, 2200);
+}
+
+function logMeal() {
+  if (!currentFood) return;
+  const f = currentFood;
+  loggedMeals.push({emoji: f.emoji, name: f.name, time: 'Just now', cals: f.cal, pts: f.pts});
+  renderMeals();
+  showToast(`+${f.pts} NutriPoints earned! 🎉`);
+  // update calorie display
+  const now = parseInt(document.getElementById('cal-today').textContent.replace(',','')) + f.cal;
+  document.getElementById('cal-today').textContent = now.toLocaleString();
+  updateRing(Math.min(now / 2100, 1));
+  currentFood = null;
+  document.getElementById('foodResult').classList.remove('visible');
+  document.getElementById('scanPlaceholder').style.display = 'block';
+  document.getElementById('scanBadge').className = 'scanning-badge'; document.getElementById('scanBadge').textContent = 'READY';
+}
+
+function renderMeals() {
+  const el = document.getElementById('loggedMeals');
+  el.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Today\'s Log</div>';
+  loggedMeals.forEach(m => {
+    el.innerHTML += `<div class="meal-item"><span class="meal-emoji2">${m.emoji}</span><div class="meal-info"><div class="meal-name">${m.name}</div><div class="meal-time">${m.time}</div></div><div style="text-align:right"><div class="meal-cals">${m.cals} kcal</div><div class="meal-pts">+${m.pts} pts</div></div></div>`;
+  });
+}
+
+function updateRing(pct) {
+  const circ = 327;
+  const offset = circ - (circ * pct);
+  document.getElementById('calRing').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = Math.round(pct * 100) + '%';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Leaderboard data
+const lbData = {
+  week: [
+    {name:'Zara Patel', init:'ZP', pts:7840, streak:'22 day streak', color:'#a78bfa'},
+    {name:'Kai Nakamura', init:'KN', pts:6920, streak:'18 day streak', color:'#63d2ff'},
+    {name:'Sofia Reyes', init:'SR', pts:6210, streak:'15 day streak', color:'#fb923c'},
+    {name:'Alex Chen', init:'AX', pts:4820, streak:'14 day streak', color:'#34d399', me:true},
+    {name:'Marcus Webb', init:'MW', pts:4450, streak:'10 day streak', color:'#f472b6'},
+    {name:'Priya Sharma', init:'PS', pts:3980, streak:'8 day streak', color:'#fbbf24'},
+    {name:'Lucas Müller', init:'LM', pts:3210, streak:'7 day streak', color:'#63d2ff'},
+    {name:'Amara Diallo', init:'AD', pts:2890, streak:'5 day streak', color:'#a78bfa'},
+  ],
+  month: [
+    {name:'Kai Nakamura', init:'KN', pts:28400, streak:'Top scorer', color:'#63d2ff'},
+    {name:'Zara Patel', init:'ZP', pts:26100, streak:'On fire!', color:'#a78bfa'},
+    {name:'Alex Chen', init:'AX', pts:19200, streak:'14 day streak', color:'#34d399', me:true},
+    {name:'Sofia Reyes', init:'SR', pts:18900, streak:'Great month', color:'#fb923c'},
+    {name:'Priya Sharma', init:'PS', pts:15600, streak:'Rising fast', color:'#fbbf24'},
+  ],
+  all: [
+    {name:'Zara Patel', init:'ZP', pts:124800, streak:'Legend', color:'#a78bfa'},
+    {name:'Kai Nakamura', init:'KN', pts:118200, streak:'Elite', color:'#63d2ff'},
+    {name:'Sofia Reyes', init:'SR', pts:98400, streak:'Master', color:'#fb923c'},
+    {name:'Marcus Webb', init:'MW', pts:76200, streak:'Pro', color:'#f472b6'},
+    {name:'Alex Chen', init:'AX', pts:68400, streak:'Architect', color:'#34d399', me:true},
+  ]
+};
+
+function updateLeaderboard(period) {
+  const list = document.getElementById('lbList');
+  const data = lbData[period] || lbData.week;
+  const maxPts = data[0].pts;
+  list.innerHTML = '';
+  data.forEach((p, i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+    const meClass = p.me ? 'me' : '';
+    const meLabel = p.me ? ' <span style="font-size:11px;background:rgba(99,210,255,0.1);border:1px solid rgba(99,210,255,0.3);color:var(--accent);padding:2px 8px;border-radius:10px;margin-left:6px;font-family:Orbitron,sans-serif;letter-spacing:1px">YOU</span>' : '';
+    const pct = Math.round((p.pts / maxPts) * 100);
+    list.innerHTML += `
+      <div class="lb-item ${rankClass} ${meClass}">
+        <div class="rank-num">${rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank}</div>
+        <div class="lb-avatar" style="background:${p.color}20;color:${p.color};border:1px solid ${p.color}40;">${p.init}</div>
+        <div class="lb-info">
+          <div class="lb-name">${p.name}${meLabel}</div>
+          <div class="lb-streak">${p.streak}</div>
+          <div class="lb-bar"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="lb-pts">
+          <div class="lb-pts-val">${p.pts.toLocaleString()}</div>
+          <div class="lb-pts-label">pts</div>
+        </div>
+      </div>`;
+  });
+}
+
+// Diet plans
+const diets = [
+  { icon:'🥦', name:'Plant-Based', desc:'Maximize micronutrients with whole plant foods. Ideal for longevity and reducing inflammation.', macros:['Carbs 50%','Protein 20%','Fat 30%'], plan:[
+    {type:'Breakfast',meal:'Acai bowl with granola & berries',cals:420},
+    {type:'Lunch',meal:'Lentil soup with sourdough',cals:510},
+    {type:'Snack',meal:'Apple with almond butter',cals:190},
+    {type:'Dinner',meal:'Roasted veggie grain bowl',cals:560},
+  ]},
+  { icon:'💪', name:'High Protein', desc:'Fuel muscle growth and recovery. Perfect for athletes and those looking to build lean mass.', macros:['Carbs 30%','Protein 40%','Fat 30%'], plan:[
+    {type:'Breakfast',meal:'Greek yoghurt & egg white omelette',cals:480},
+    {type:'Lunch',meal:'Grilled chicken with quinoa',cals:620},
+    {type:'Snack',meal:'Protein shake + banana',cals:280},
+    {type:'Dinner',meal:'Salmon with sweet potato',cals:580},
+  ]},
+  { icon:'🥑', name:'Ketogenic', desc:'Burn fat for fuel with ultra-low carbs. Great for weight loss and mental clarity.', macros:['Carbs 5%','Protein 25%','Fat 70%'], plan:[
+    {type:'Breakfast',meal:'Bacon, eggs & avocado',cals:520},
+    {type:'Lunch',meal:'Chicken Caesar salad (no croutons)',cals:480},
+    {type:'Snack',meal:'Cheese & macadamia nuts',cals:320},
+    {type:'Dinner',meal:'Ribeye steak with asparagus',cals:680},
+  ]},
+  { icon:'🫐', name:'Mediterranean', desc:'Science-backed diet linked to heart health and longevity. Delicious and sustainable.', macros:['Carbs 45%','Protein 20%','Fat 35%'], plan:[
+    {type:'Breakfast',meal:'Overnight oats with olive oil & nuts',cals:390},
+    {type:'Lunch',meal:'Falafel wrap with hummus',cals:540},
+    {type:'Snack',meal:'Olives & whole grain pita',cals:220},
+    {type:'Dinner',meal:'Grilled sea bass with tabbouleh',cals:490},
+  ]},
+];
+
+function renderDiets() {
+  const grid = document.getElementById('dietGrid');
+  grid.innerHTML = '';
+  diets.forEach((d, i) => {
+    grid.innerHTML += `
+      <div class="diet-card" onclick="selectDiet(${i},this)">
+        <div class="diet-icon">${d.icon}</div>
+        <div class="diet-name">${d.name}</div>
+        <div class="diet-desc">${d.desc}</div>
+        <div class="diet-macros">${d.macros.map(m=>`<span class="diet-macro">${m}</span>`).join('')}</div>
+      </div>`;
+  });
+}
+
+function selectDiet(i, el) {
+  document.querySelectorAll('.diet-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const d = diets[i];
+  const plan = document.getElementById('dayPlan');
+  const title = document.getElementById('mealPlanTitle');
+  title.textContent = `${d.name} Daily Meal Plan`;
+  plan.innerHTML = d.plan.map(m => `
+    <div class="day-meal">
+      <span class="meal-type">${m.type}</span>
+      <span class="meal-suggestion">${m.meal}</span>
+      <span class="meal-cals2">${m.cals} kcal</span>
+    </div>`).join('');
+  document.getElementById('mealPlanSection').style.display = 'block';
+}
+
+// Achievements
+const achievements = [
+  {icon:'🔥', name:'7-Day Streak', pts:'+500', locked:false},
+  {icon:'🌱', name:'First Salad', pts:'+100', locked:false},
+  {icon:'💧', name:'Hydration Hero', pts:'+200', locked:false},
+  {icon:'🏆', name:'Top 10 Rank', pts:'+300', locked:false},
+  {icon:'💪', name:'Protein Goal x7', pts:'+400', locked:false},
+  {icon:'🥇', name:'#1 This Week', pts:'+1000', locked:true},
+  {icon:'🌟', name:'30-Day Streak', pts:'+2000', locked:true},
+  {icon:'🚀', name:'Level 20', pts:'+5000', locked:true},
+];
+
+function renderAchievements() {
+  const grid = document.getElementById('achieveGrid');
+  grid.innerHTML = achievements.map(a => `
+    <div class="ach-card ${a.locked ? 'locked' : ''}">
+      <div class="ach-icon">${a.locked ? '🔒' : a.icon}</div>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-pts">${a.pts}</div>
+    </div>`).join('');
+}
+
+// Weekly charts
+function renderWeekChart() {
+  const data = [1820, 2100, 1650, 2340, 1980, 1340, 0];
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const max = 2500;
+  const el = document.getElementById('weekChart');
+  el.innerHTML = data.map((v, i) => {
+    const h = v > 0 ? Math.max((v / max) * 80, 6) : 4;
+    const color = v > 2100 ? 'var(--red)' : v > 1500 ? 'var(--accent3)' : v > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+    return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:${color};"></div><div class="bar-day">${days[i]}</div></div>`;
+  }).join('');
+}
+
+function renderPtsChart() {
+  const data = [380, 420, 290, 510, 460, 240, 0];
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const max = 600;
+  const el = document.getElementById('ptsChart');
+  el.innerHTML = data.map((v, i) => {
+    const h = v > 0 ? Math.max((v / max) * 80, 6) : 4;
+    return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:var(--accent2);opacity:${v>0?0.7+0.3*(v/max):0.2};"></div><div class="bar-day">${days[i]}</div></div>`;
+  }).join('');
+}
+
+// Init
+renderMeals();
+updateLeaderboard('week');
+renderDiets();
+renderAchievements();
+renderWeekChart();
+renderPtsChart();
+setTimeout(() => updateRing(0.638), 300);
+</script>
+</body>
+</html>
